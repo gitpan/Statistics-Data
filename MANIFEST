@@ -1,0 +1,13 @@
+Build.PL
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Statistics/Data.pm
+t/00-useok.t
+t/01-data.t
+t/pod-coverage.t
+t/pod.t
+
+
+META.yml
