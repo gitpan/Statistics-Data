@@ -1,6 +1,6 @@
-Statistics-Data-0.01
+Statistics-Data-0.02
 
-Version 0.01
+Version 0.02
 fixes for the module are worth downloading.
 
 
@@ -30,16 +30,16 @@ perldoc command.
 You can also look for information at:
 
     RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.01
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.02
 
     AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Statistics-Data-0.01
+        http://annocpan.org/dist/Statistics-Data-0.02
 
     CPAN Ratings
-        http://cpanratings.perl.org/d/Statistics-Data-0.01
+        http://cpanratings.perl.org/d/Statistics-Data-0.02
 
     Search CPAN
-        http://search.cpan.org/dist/Statistics-Data-0.01/
+        http://search.cpan.org/dist/Statistics-Data-0.02/
 
 
 COPYRIGHT AND LICENCE

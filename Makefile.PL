@@ -5,7 +5,12 @@ WriteMakefile
   'NAME' => 'Statistics::Data',
   'VERSION_FROM' => 'lib/Statistics/Data.pm',
   'PREREQ_PM' => {
-                   'Test::More' => 0
+                   'Data::Serializer' => '0.59',
+                   'List::AllUtils' => '0.03',
+                   'Scalar::Util' => '1.23',
+                   'String::Util' => '0.11',
+                   'Test::More' => 0,
+                   'Text::SimpleTable' => '2.03'
                  },
   'INSTALLDIRS' => 'site',
   'EXE_FILES' => [],
