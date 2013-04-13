@@ -5,6 +5,7 @@ WriteMakefile
   'NAME' => 'Statistics::Data',
   'VERSION_FROM' => 'lib/Statistics/Data.pm',
   'PREREQ_PM' => {
+                   'Array::Compare' => 0,
                    'Data::Serializer' => '0.59',
                    'List::AllUtils' => '0.03',
                    'Scalar::Util' => '1.23',

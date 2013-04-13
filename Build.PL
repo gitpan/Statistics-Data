@@ -12,6 +12,7 @@ my $builder = Module::Build->new(
     },
     build_requires => {
         'Test::More' => 0,
+        'Array::Compare' => 0,
     },
     requires => {
         'Data::Serializer' => '0.59',
@@ -20,7 +21,7 @@ my $builder = Module::Build->new(
         'String::Util' => '0.11',
         'Text::SimpleTable' => '2.03',
     },
-    add_to_cleanup      => [ 'Statistics-Data-0.02-*' ],
+    add_to_cleanup      => [ 'Statistics-Data-0.03-*' ],
     create_makefile_pl => 'traditional',
 );
 

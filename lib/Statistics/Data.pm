@@ -6,7 +6,7 @@ use Data::Serializer;
 use List::AllUtils qw(all); # the fn 'all', not "all fns"
 use String::Util qw(hascontent nocontent);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 NAME
 
@@ -14,7 +14,7 @@ Statistics-Data - Manage loading, reading, updating, storing, etc. one or more s
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -671,19 +671,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.02>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.03>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Statistics-Data-0.02>
+L<http://annocpan.org/dist/Statistics-Data-0.03>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Statistics-Data-0.02>
+L<http://cpanratings.perl.org/d/Statistics-Data-0.03>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Statistics-Data-0.02/>
+L<http://search.cpan.org/dist/Statistics-Data-0.03/>
 
 =back
 
@@ -692,7 +692,7 @@ L<http://search.cpan.org/dist/Statistics-Data-0.02/>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2012 Roderick Garton.
+Copyright 2012-2013 Roderick Garton.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published

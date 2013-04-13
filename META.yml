@@ -3,6 +3,7 @@ abstract: 'Manage loading, reading, updating, storing, etc. one or more sequence
 author:
   - 'Roderick Garton <rgarton@cpan.org>'
 build_requires:
+  Array::Compare: 0
   Test::More: 0
 configure_requires:
   Module::Build: 0.36
@@ -15,7 +16,7 @@ name: Statistics-Data
 provides:
   Statistics::Data:
     file: lib/Statistics/Data.pm
-    version: 0.02
+    version: 0.03
 requires:
   Data::Serializer: 0.59
   List::AllUtils: 0.03
@@ -24,4 +25,4 @@ requires:
   Text::SimpleTable: 2.03
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.02
+version: 0.03
