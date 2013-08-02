@@ -1,5 +1,9 @@
 Revision history for perl module Statistics-Data
 
+0.05 2013-08-03
+    - all_numeric() and all_proportions() now all check that all values are defined, have content as per String::Util hascontent()
+    - all_proportions() changed so that it does not accept strings that look like (some) proportions
+
 0.04 2013-08-02
     - added all_full() method
     - completed/further tests of methods ndata(), share(), all_numeric() and all_proportions().

@@ -22,7 +22,7 @@ my $builder = Module::Build->new(
         'String::Util' => '0.11',
         'Text::SimpleTable' => '2.03',
     },
-    add_to_cleanup      => [ 'Statistics-Data-0.04-*' ],
+    add_to_cleanup      => [ 'Statistics-Data-0.05-*' ],
     create_makefile_pl => 'traditional',
 );
 

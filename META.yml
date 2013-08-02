@@ -17,7 +17,7 @@ name: Statistics-Data
 provides:
   Statistics::Data:
     file: lib/Statistics/Data.pm
-    version: 0.04
+    version: 0.05
 requires:
   Data::Serializer: 0.59
   List::AllUtils: 0.03
@@ -26,4 +26,4 @@ requires:
   Text::SimpleTable: 2.03
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.04
+version: 0.05

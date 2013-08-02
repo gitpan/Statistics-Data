@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 use constant EPS => 1e-3;
 use Statistics::Data;
 use Array::Compare;
@@ -18,8 +18,6 @@ my ($ret, @data1, @data2) = ();
 
 @data1 = (1, 2, 3, 3, 3, 1, 4, 2, 'x', 2);
 @data2 = (2, 4, 4, 1, 3, 3, 5, 2, '', 5);
-@data3 = (.3, .25, .8);
-#@data1e = (@data1, 'a', 'b');
 
 # using anonymous, unloaded data:
 $ret = $dat->all_full(\@data1);
@@ -36,15 +34,26 @@ $dat->load(dist1 => [@data1[0 .. 7]]);
 $ret = $dat->all_numeric(label => 'dist1');
 ok($ret == 1, "Error in testing all_numeric(): Should be 1, is $ret");
 
-$dat->add(dist1 => ['x']);
+$dat->add(dist1 => ['x', 1]);
 $ret = $dat->all_numeric(label => 'dist1');
 ok($ret == 0, "Error in testing all_numeric(): Should be 0, is $ret");
 
-$dat->add(dist2 => \@data3);
+$ret = $dat->all_numeric(\@data2);
+ok($ret == 0, "Error in testing all_numeric(): Should be 0, is $ret");
+
 $ret = $dat->all_proportions(label => 'dist1');
 ok($ret == 0, "Error in testing all_proportions(): Should be 0, is $ret");
 
-$ret = $dat->all_proportions(label => 'dist2');
+$dat->load([0, 1]);
+$ret = $dat->all_proportions();
+ok($ret == 1, "Error in testing all_proportions(): Should be 1, is $ret");
+
+$dat->load([.8, .3, '', .4]);
+$ret = $dat->all_proportions();
+ok($ret == 0, "Error in testing all_proportions(): Should be 0, is $ret");
+
+$dat->load(dist => [.3, .25, .8]);
+$ret = $dat->all_proportions(label => 'dist');
 ok($ret == 1, "Error in testing all_proportions(): Should be 1, is $ret");
 
 sub equal {

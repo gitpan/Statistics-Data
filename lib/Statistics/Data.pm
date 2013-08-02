@@ -4,7 +4,7 @@ use warnings FATAL => 'all';
 use Carp qw(croak);
 use List::AllUtils qw(all);
 use String::Util qw(hascontent nocontent);
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 NAME
 
@@ -12,11 +12,11 @@ Statistics::Data - Manage loading, accessing, updating one or more sequences of 
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
- use Statistics::Data;
+ use Statistics::Data 0.05;
  my $dat = Statistics::Data->new();
  
  # With labelled sequences:
@@ -251,10 +251,12 @@ sub all_numeric {
     my $self = shift;
     my $data = ref $_[0] ? shift: $self->access(@_);
     require Scalar::Util;
+    my $ret = 0;
     foreach (@{$data}) {
-         return 0 if ! Scalar::Util::looks_like_number($_);
+        $ret =  (nocontent($_) or not Scalar::Util::looks_like_number($_)) ? 0 : 1;
+        last if $ret == 0;
     }
-    return 1;
+    return $ret;
 }
 *all_numerical = \&all_numeric;
 
@@ -270,15 +272,18 @@ Ensure data are all proportions. Sometimes, the data a module needs are all prop
 sub all_proportions {
     my $self = shift;
     my $data = ref $_[0] ? shift: $self->access(@_);
-    if ($self->all_numeric($data)) {
-        foreach (@{$data}) {
-            return 0 if ! _valid_p($_);
+    require Scalar::Util;
+    my $ret = 0;
+    foreach (@{$data}) {
+        if (nocontent($_)) {
+            $ret = 0;
         }
-        return 1;
+        elsif (Scalar::Util::looks_like_number($_)) {
+            $ret = ( $_ < 0 || $_ > 1 ) ? 0 : 1;
+        }
+        last if $ret == 0;
     }
-    else {
-        return 0;
-    }
+    return $ret;
 }
 
 =head2 dump_vals
@@ -423,7 +428,7 @@ sub _init_unlabelled_data {
 sub _index_by_args {
     my ($self, @args) = @_;
     my $args = ref $args[0] ? $args[0] : {@args};
-    my $i; 
+    my $i;
     if (hascontent($args->{'index'})) {
         $i = $args->{'index'};
     }
@@ -455,10 +460,6 @@ sub _add_from_object_aref {
         }
     }
     return 1;
-}
-
-sub _valid_p { # assumes val is numerical
-    return ( $_[0] !~ m/^0?[.]\d+$/xms ) || ( $_[0] < 0 || $_[0] > 1 ) ? 0 : 1;
 }
 
 =head1 EXAMPLES
@@ -606,19 +607,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.04>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.05>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Statistics-Data-0.04>
+L<http://annocpan.org/dist/Statistics-Data-0.05>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Statistics-Data-0.04>
+L<http://cpanratings.perl.org/d/Statistics-Data-0.05>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Statistics-Data-0.04/>
+L<http://search.cpan.org/dist/Statistics-Data-0.05/>
 
 =back
 
