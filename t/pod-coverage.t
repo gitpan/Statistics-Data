@@ -14,4 +14,4 @@ my $min_pc = 0.18;
 eval "use Pod::Coverage $min_pc";
 plan skip_all => "Pod::Coverage $min_pc required for testing POD coverage"
     if $@;
-all_pod_coverage_ok({trustme => [qw/add_data append_data clone dump_data get_data list_data load_data pass read_data retrieve store update/]});
+all_pod_coverage_ok({trustme => [qw/add_data all_numerical append_data clone dump_data dump_line get_data import list list_data load_data open pass read save update/]});

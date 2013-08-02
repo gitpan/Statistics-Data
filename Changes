@@ -1,9 +1,23 @@
-Revision history for Statistics-Data-0.03
+Revision history for perl module Statistics-Data
 
-0.02    Apr 2013
-    + Marks public release
+0.04 2013-08-02
+    - added all_full() method
+    - completed/further tests of methods ndata(), share(), all_numeric() and all_proportions().
+    - read() method is now known as access() to avoid any builtin fn conflict; but still supported as an alias for the time being
+    - list() method is now known as dump_list(); still supported for legacy
+    - dump_line() method is now known as dump_vals() because it is not always a line
+    = renamed save() as save_to_file(), and open() as load_from_file(), for clarity and avoid builtin fn conflict; prior names supported as undocumented aliases for now
+    - arguments for saving and loading to/from file must now be given only in these methods - not in new() as Data::Serializer is only now 'required' here, not 'used' from begin.
+    - removed freeze() and thaw() methods as feature-creep; maybe slurp or load_from_file and access after save_to_file instead.
+    - import() is alias for share()
+    - Misc. POD and "best practice" revisions
+
+0.03 2013-04-13
+    - Handle install issues
+
+0.02 2013-04-01
+    - Marks public release
     
-
-0.01	Sat Oct  3 19:12:03 2009
-    + First version, fledgling release.
+0.01 2009-10-03
+    - First version
 
