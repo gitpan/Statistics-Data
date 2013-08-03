@@ -57,6 +57,7 @@ $ret = $dat->all_proportions(label => 'dist');
 ok($ret == 1, "Error in testing all_proportions(): Should be 1, is $ret");
 
 sub equal {
+    return 0 if ! defined $_[0] || ! defined $_[1];
     return 1 if $_[0] + EPS > $_[1] and $_[0] - EPS < $_[1];
     return 0;
 }

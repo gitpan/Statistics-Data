@@ -1,8 +1,8 @@
-Statistics-Data-0.05
+Statistics-Data-0.06
 
-Version 0.05
-fixes for the module are worth downloading.
+Version 0.06
 
+A package for managing loading, updating, accessing, and saving data for use by methods in some other Perl Statistics modules.
 
 INSTALLATION
 
@@ -30,16 +30,16 @@ perldoc command.
 You can also look for information at:
 
     RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.05
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.06
 
     AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Statistics-Data-0.05
+        http://annocpan.org/dist/Statistics-Data-0.06
 
     CPAN Ratings
-        http://cpanratings.perl.org/d/Statistics-Data-0.05
+        http://cpanratings.perl.org/d/Statistics-Data-0.06
 
     Search CPAN
-        http://search.cpan.org/dist/Statistics-Data-0.05/
+        http://search.cpan.org/dist/Statistics-Data-0.06/
 
 
 COPYRIGHT AND LICENCE

@@ -3,8 +3,9 @@ use strict;
 use warnings FATAL => 'all';
 use Carp qw(croak);
 use List::AllUtils qw(all);
+use Number::Misc qw(is_even);
 use String::Util qw(hascontent nocontent);
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -12,11 +13,11 @@ Statistics::Data - Manage loading, accessing, updating one or more sequences of 
 
 =head1 VERSION
 
-Version 0.05
+This is documentation for Version 0.06 of Statistics/Data.pm, released August 2013.
 
 =head1 SYNOPSIS
 
- use Statistics::Data 0.05;
+ use Statistics::Data 0.06;
  my $dat = Statistics::Data->new();
  
  # With labelled sequences:
@@ -71,7 +72,7 @@ sub new {
 
 I<Alias>: B<clone>
 
-Returns a copy of the class object with its data loaded (if any). Note this is not a copy of any particular data but the whole blessed hash. If you want that, use L<pass|Statistics::Data/pass> to get all the data added to a new object, or L<access|Statistics::Data/access> to load/add particular sequences into another object. Nothing modified in this new object affects the original.
+Returns a copy of the class object with its data loaded (if any). Note this is not a copy of any particular data but the whole blessed hash. Alternatively, use L<pass|Statistics::Data/pass> to get all the data added to a new object, or use L<access|Statistics::Data/access> to load/add particular sequences into another object. Nothing modified in this new object affects the original.
 
 =cut
 
@@ -85,29 +86,85 @@ sub copy {
 
 =head2 load
 
- $dat->load(@data);             # CASE 1. - can be updated/retrieved anonymously, or as index => i (load order)
- $dat->load(\@data);            # CASE 2. - same, as ref
- $dat->load(data => \@data);    # CASE 3. - can be updated/retrieved as label => 'data' (arbitrary name, not just 'data'); or by index (order) as well
- $dat->load({ data => \@data }) # CASE 4. - same, but referenced hash
- $dat->load(blues => \@blue_data, reds => \@red_data);      # CASE 5. multiple named loads
- $dat->load({ blues => \@blue_data, reds => \@red_data });    # CASE 6. same, but referenced hash
- $dat->load(\@blue_data, \@red_data);  # CASE 7. can be got at by index (load order)
+ $dat->load(@data);             # CASE 1 - can be updated/retrieved anonymously, or as index => i (load order)
+ $dat->load(\@data);            # CASE 2 - same, as aref
+ $dat->load(data => \@data);    # CASE 3 - updated/retrieved as label => 'data' (arbitrary name, not just 'data'); or by index (order)
+ $dat->load({ data => \@data }) # CASE 4 - same as CASE 4, as hashref
+ $dat->load(blues => \@blue_data, reds => \@red_data);      # CASE 5 - same as CASE 3 but with multiple named loads
+ $dat->load({ blues => \@blue_data, reds => \@red_data });  # CASE 6 - same as CASE 5 bu as hashref
+ $dat->load(\@blue_data, \@red_data);  # CASE 7 - same as CASE 2 but with multiple aref loads
+
  # Not supported:
- #$dat->load(blues => \@blue_data, reds => [\@red_data1, \@red_data2]); # CASE 8. as for multiple matching problems: not yet? supported
- #$dat->load(data => @data); # CASE 9. ok but wrong (puts string "data" in @data - so load(data => ['a']) is right but not load(data => 'a')
- #$dat->load([\@blue_data, \@red_data]); # CASE 10. use CASE 7 instead
- #dat->load([ [blues => \@blue_data], [reds => \@red_data] ]); CASE 11. you've got to be joking ...
+ #$dat->load(data => @data); # not OK - use CASE 3 instead
+ #$dat->load([\@blue_data, \@red_data]); # not OK - use CASE 7 instead
+ #$dat->load([ [blues => \@blue_data], [reds => \@red_data] ]); # not OK - use CASE 5 or CASE 6 instead
+ #$dat->load(blues => \@blue_data, reds => [\@red_data1, \@red_data2]); # not OK - too mixed to make sense
 
 I<Alias>: B<load_data>
 
-Cache a list of data as an array-reference. Each call removes previous loads, as does sending nothing. If data need to be cached without unloading previous loads, try L<add|Statistics::Data/add>.
+Cache a list of data as an array-reference. Each call removes previous loads, as does sending nothing. If data need to be cached without unloading previous loads, try L<add|Statistics::Data/add>. Arguments with the following structures are acceptable as data, and will be L<access|Statistics::Data/access>ible by either index or label as expected:
+
+=over 4
+
+=item load ARRAY
+
+Load an anonymous array that has no named values. For example:
+
+ $dat->load(1, 4, 7);
+ $dat->load(@ari);
+
+This is loaded as a single sequence, with an undefined label, and indexed as 0. Note that trying to load a labelled dataset with an unreferenced array is wrong for it will be treated like this case - the label will be "folded" into the sequence itself:
+
+ $dat->load('dist' => 3); # no croak but not ok! 
+
+=item load AREF
+
+Load a reference to a single anonymous array that has no named values, e.g.: 
+
+ $dat->load([1, 4, 7]);
+ $dat->load(\@ari);
+
+This is loaded as a single sequence, with an undefined label, and indexed as 0.
+
+=item load ARRAY of AREF(s)
+
+Same as above, but note that more than one unlabelled array-reference can also be loaded at once, e.g.:
+
+ $dat->load([1, 4, 7], [2, 5, 9]);
+ $dat->load(\@ari1, \@ari2);
+
+Each sequence can be accessed, using L<access|Statistics::Data/access>, by specifying B<index> => index, the latter value representing the order in which these arrays were loaded.
+
+=item load HASH of AREF(s)
+
+Load one or more labelled references to arrays, e.g.:
+
+ $dat->load('dist1' => [1, 4, 7]);
+ $dat->load('dist1' => [1, 4, 7], 'dist2' => [2, 5, 9]);
+
+This loads the sequence(s) with a label attribute, so that when calling L<access|Statistics::Data/access>, they can be retrieved by name, e.g., passing B<label> => 'dist1'. The load method involves a check that there is an even number of arguments, and that, if this really is a hash, all the keys are defined and not empty, and all the values are in fact array-references.
+
+=item load HASHREF of AREF(s)
+
+As above, but where the hash is referenced, e.g.:
+
+ $dat->load({'dist1' => [1, 4, 7], 'dist2' => [2, 5, 9]});
+
+=back
+
+This means that using the following forms will produce unexpected results, if they do not actually croak, and so should not be used:
+
+ $dat->load(data => @data); # no croak but wrong - puts "data" in @data - use \@data
+ $dat->load([\@blue_data, \@red_data]); # use unreferenced ARRAY of AREFs instead
+ $dat->load([ [blues => \@blue_data], [reds => \@red_data] ]); # treated as single AREF; use HASH of AREFs instead
+ $dat->load(blues => \@blue_data, reds => [\@red_data1, \@red_data2]); # mixed structures not supported
 
 =cut
 
 sub load { # load single aref: cannot load more than one sequence; keeps a direct reference to the data: any edits creep back.
-    my $self = shift;
+    my ($self, @args) = @_;
     $self->unload();
-    $self->add(@_);
+    $self->add(@args);
     return 1;
 }
 *load_data = \&load;
@@ -230,8 +287,8 @@ Checks not only if the data sequence, as named or indexed, exists, but if it is 
 =cut
 
 sub all_full {
-    my $self = shift;
-    my $data = ref $_[0] ? shift: $self->access(@_);
+    my ($self, @args) = @_;
+    my $data = ref $args[0] ? shift @args: $self->access(@args);
     foreach (@{$data}) {
         return 0 if nocontent($_);
     }
@@ -248,8 +305,8 @@ Ensure data are all numerical, using C<looks_like_number> in L<Scalar::Util|Scal
 =cut
 
 sub all_numeric {
-    my $self = shift;
-    my $data = ref $_[0] ? shift: $self->access(@_);
+    my ($self, @args) = @_;
+    my $data = ref $args[0] ? shift @args: $self->access(@args);
     require Scalar::Util;
     my $ret = 0;
     foreach (@{$data}) {
@@ -270,8 +327,8 @@ Ensure data are all proportions. Sometimes, the data a module needs are all prop
 =cut
 
 sub all_proportions {
-    my $self = shift;
-    my $data = ref $_[0] ? shift: $self->access(@_);
+    my ($self, @args) = @_;
+    my $data = ref $args[0] ? shift @args: $self->access(@args);
     require Scalar::Util;
     my $ret = 0;
     foreach (@{$data}) {
@@ -297,8 +354,8 @@ Prints to STDOUT a space-separated line (ending with "\n") of a loaded/added dat
 =cut
 
 sub dump_vals {
-    my $self = shift;
-    my $args = ref $_[0] ? $_[0] : {@_};
+    my ($self, @args) = @_;
+    my $args = ref $args[0] ? $args[0] : {@args};
     my $delim = $args->{'delim'} || q{ };
     print join($delim, @{$self->access($args)}), "\n" or croak 'Could not print line to STDOUT';
     return 1;
@@ -344,8 +401,8 @@ Saves the data presently loaded in the Statistics::Data object to a file, with t
 =cut
 
 sub save_to_file {
-    my $self = shift;
-    my $args = ref $_[0] ? $_[0] : {@_};
+    my ($self, @args) = @_;
+    my $args = ref $args[0] ? $args[0] : {@args};
     croak 'There is no path for saving data' if nocontent($args->{'path'});
     require Data::Serializer;
     my $serializer = Data::Serializer->new(%{$args});
@@ -364,8 +421,8 @@ Loads data from a file, assuming there are data in the given path that have been
 =cut
 
 sub load_from_file {
-    my $self = shift;
-    my $args = ref $_[0] ? $_[0] : {@_};
+    my ($self, @args) = @_;
+    my $args = ref $args[0] ? $args[0] : {@args};
     croak 'There is no path for loading data' if nocontent($args->{'path'}) || !-e $args->{'path'}; # is filepath valid?
     require Data::Serializer;
     my $serializer = Data::Serializer->new(%{$args});
@@ -381,24 +438,68 @@ sub load_from_file {
 sub _init_data {
     my ($self, @args) = @_;
     my $tmp = {};
-    if (ref $args[0]) {
-        if (all { ref($_) eq 'ARRAY' } @args) { # case 2 & 7
-            $tmp = _init_unlabelled_data(@args);
-        }
-        elsif (ref $args[0] eq 'HASH') { # cases 4 & 6
-            $tmp = _init_labelled_data($self, $args[0]);
-        }
-        else {
-            croak 'Don\'t know how to load/add data';
-        }
+    if (_isa_hashref_of_arefs($args[0]) ) { # cases 4 & 6
+        $tmp = _init_labelled_data($self, $args[0]);
     }
-    elsif (ref $args[1]) { # cases 3 & 5 
+    elsif (_isa_hash_of_arefs(@args)) { # cases 3 & 5
         $tmp = _init_labelled_data($self, {@args});
+    }
+    elsif (_isa_array_of_arefs(@args)) { # case 2 & 7
+        $tmp = _init_unlabelled_data(@args);
+    }
+    elsif (ref $args[0]) {
+        croak 'Don\'t know how to load/add data';
     }
     else { # case 1
         $tmp->{0} = {seq => [@args], lab => undef};
     }
     return $tmp;
+}
+
+sub _isa_hashref_of_arefs {
+    my $arg = shift;
+    if ( not ref $arg or ref $arg ne 'HASH') {
+        return 0;
+    }
+    else {
+        return _isa_hash_of_arefs(%{$arg});
+    }
+}
+
+sub _isa_hash_of_arefs {
+    # determines that:
+    # - scalar @args passes Number::Misc is_even, then that:
+    # - every odd indexed value 'hascontent' via String::Util
+    # - every even indexed value is aref
+    my @args = @_;
+    my $ret = 0;
+    if (is_even(scalar @args)) { # Number::Misc method - not odd number in assignment
+        my %args = @args; # so assume is hash
+        HASHCHECK:
+        while ( my ($lab, $val) = each %args ) { # print "lab = $lab, val = $val\n";
+            if ( hascontent($lab) && ref $val eq 'ARRAY' ) {
+                $ret = 1;
+            }
+            else {
+                $ret = 0;
+            }
+            last HASHCHECK if $ret == 0;
+        }
+    }
+    else {
+        $ret = 0;
+    }
+    return $ret;
+}
+
+sub _isa_array_of_arefs {
+    my @args = @_;
+    if ( all { ref($_) eq 'ARRAY' } @args ) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 sub _init_labelled_data {
@@ -410,6 +511,7 @@ sub _init_labelled_data {
             $tmp{$j} = {seq => [@{$seq}], lab => undef};
         }
         else {# no aref labelled $lab yet: define for seq and label
+            print "init lab = $lab seq = $seq\n";
             $tmp{$i++} = {seq => [@{$seq}], lab => $lab};
         }
     }
@@ -480,13 +582,13 @@ Say we're finished testing for now, so:
  $frogs->save_to_file(path => 'frogs.csv');
  $frogs->unload();
 
-Another frog has been trained, measures taken:
+But another frog has been trained, measures taken:
 
  $frogs->load_from_file(path => 'frogs.csv');
  $frogs->add(Pupil => [93], Attract => [6.47], Names => ['Jack']); # add yet another frog's data
  $frogs->dump_data(label => 'Pupil'); # prints "59.2 77.7 56.1 83.4 93": all 5 frogs' pupil data
 
-For another experiment, say, we take measures of heart-rate, and can add them to the current load of data for analysis alongside them:
+Now we run another experiment, taking measures of heart-rate, and can add them to the current load of data for analysis:
 
  $frogs->add(Heartrate => [.70, .50, .44, .67, .66]); # add entire new sequence for all frogs
  print "heartrate data are bung" if ! $frogs->all_proportions(label => 'Heartrate'); # validity check (could do before add)
@@ -521,11 +623,11 @@ Or if these data were loaded directly within Statistics::Data, the data can be s
 
 =head1 DIAGNOSTICS
 
-=over 2
+=over 4
 
 =item Don't know how to load/add data
 
-Croaked when attempting to load or add data with an unsupported data structure. See the examples under L<load|Statistics::Data/load> for valid (and invalid) ways of sending data to them.
+Croaked when attempting to load or add data with an unsupported data structure where the first argument is a reference. See the examples under L<load|Statistics::Data/load> for valid (and invalid) ways of sending data to them.
 
 =item Data for accessing need to be loaded
 
@@ -541,11 +643,25 @@ Croaked when calling L<save_to_file|Statistics::Data/save_to_file> or L<load_fro
 
 =back
 
+=head1 DEPENDENCIES
+
+L<List::AllUtils|List::AllUtils> - used for its C<all> method when testing loads
+
+L<Number::Misc|Number::Misc> - used for its C<is_even> method when testing loads
+
+L<String::Util|String::Util> - used for its C<hascontent> and C<nocontent> methods
+
+L<Data::Serializer|Data::Serializer> - required for L<save_to_file|Statistics::Data/save_to_file> and L<load_from_file|Statistics::Data/load_from_file>
+
+L<Scalar::Util|Scalar::Util> - required for L<all_numeric|Statistics::Data/all_numeric>
+
+L<Text::SimpleTable|Text::SimpleTable> - required for L<dump_list|Statistics::Data/dump_list>
+
 =head1 RATIONALE
 
 The basics aims/rules/behaviors of all the methods have been/are to: 
 
-=over 2
+=over 4
 
 =item lump data as arefs into the class object
 
@@ -577,23 +693,9 @@ The modules that use this one simply make themselves "based" on it, and they're 
 
 =back
 
-=head1 DEPENDENCIES
-
-L<List::AllUtils|List::AllUtils>
-
-L<String::Util|String::Util>
-
-L<Data::Serializer|Data::Serializer> - required for L<save_to_file|Statistics::Data/save_to_file> and L<load_from_file|Statistics::Data/load_from_file>
-
-L<Scalar::Util|Scalar::Util> - required for L<all_numeric|Statistics::Data/all_numeric>
-
-L<Text::SimpleTable|Text::SimpleTable> - required for L<dump_list|Statistics::Data/dump_list>
-
 =head1 BUGS AND LIMITATIONS
 
-Please report any bugs or feature requests to C<bug-statistics-data-0.01 at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Statistics-Data-0.01>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
+Please report any bugs or feature requests to C<bug-statistics-data-0.01 at rt.cpan.org>, or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Statistics-Data-0.01>. This will notify the author, and then you'll automatically be notified of progress on your bug as any changes are made.
 
 =head1 SUPPORT
 
@@ -607,19 +709,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.05>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.06>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Statistics-Data-0.05>
+L<http://annocpan.org/dist/Statistics-Data-0.06>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Statistics-Data-0.05>
+L<http://cpanratings.perl.org/d/Statistics-Data-0.06>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Statistics-Data-0.05/>
+L<http://search.cpan.org/dist/Statistics-Data-0.06/>
 
 =back
 
@@ -629,13 +731,10 @@ Roderick Garton, C<< <rgarton at cpan.org> >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2009-2013 Roderick Garton.
+Copyright 2009-2013 Roderick Garton
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
+This program is free software; you can redistribute it and/or modify it under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License. See L<perl.org/licenses|http://dev.perl.org/licenses/> for more information.
 
 =cut
 

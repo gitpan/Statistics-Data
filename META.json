@@ -29,6 +29,7 @@
          "requires" : {
             "Data::Serializer" : "0.59",
             "List::AllUtils" : "0.03",
+            "Number::Misc" : "1.0",
             "Scalar::Util" : "1.23",
             "String::Util" : "0.11",
             "Text::SimpleTable" : "2.03"
@@ -38,7 +39,7 @@
    "provides" : {
       "Statistics::Data" : {
          "file" : "lib/Statistics/Data.pm",
-         "version" : "0.05"
+         "version" : "0.06"
       }
    },
    "release_status" : "stable",
@@ -47,5 +48,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.05"
+   "version" : "0.06"
 }

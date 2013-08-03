@@ -8,12 +8,13 @@ WriteMakefile
   'EXE_FILES' => [],
   'VERSION_FROM' => 'lib/Statistics/Data.pm',
   'PREREQ_PM' => {
-                   'Test::More' => 0,
                    'Scalar::Util' => '1.23',
-                   'Data::Serializer' => '0.59',
-                   'String::Util' => '0.11',
                    'Text::SimpleTable' => '2.03',
                    'List::AllUtils' => '0.03',
+                   'Test::More' => 0,
+                   'Data::Serializer' => '0.59',
+                   'String::Util' => '0.11',
+                   'Number::Misc' => '1.0',
                    'Array::Compare' => 0
                  }
 )

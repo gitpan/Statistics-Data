@@ -18,11 +18,12 @@ my $builder = Module::Build->new(
     requires => {
         'Data::Serializer' => '0.59',
         'List::AllUtils' => '0.03', # "AllUtils" in case later versions require more than in "Utils" itself
+        'Number::Misc' => '1.0',
         'Scalar::Util' => '1.23',
         'String::Util' => '0.11',
         'Text::SimpleTable' => '2.03',
     },
-    add_to_cleanup      => [ 'Statistics-Data-0.05-*' ],
+    add_to_cleanup      => [ 'Statistics-Data-0.06-*' ],
     create_makefile_pl => 'traditional',
 );
 

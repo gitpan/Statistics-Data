@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 41;
+use Test::More tests => 39;
 use constant EPS => 1e-3;
 use Statistics::Data;
 use Array::Compare;
@@ -16,7 +16,7 @@ my $cmp_aref = Array::Compare->new;
 
 my ($ret_data, @data1, @data2, @data1e) = ();
 
-@data1 = (1, 2, 3, 3, 3, 1, 4, 2, 1, 2);
+@data1 = (1, 2, 3, 3, 3, 1, 4, 2, 1, 2); # 10 elements
 @data2 = (2, 4, 4, 1, 3, 3, 5, 2, 3, 5);
 @data1e = (@data1, 'a', 'b');
 
@@ -24,33 +24,32 @@ my ($ret_data, @data1, @data2, @data1e) = ();
 
 # CASE 1 
 eval {$dat->load(@data1);};
-ok(!$@, "Error in load: Case 1");
+ok(!$@, "Error in load of Case 1 (unreferenced unlabelled array): $@");
 # should be stored as aref labelled 'seq' in the first index of _DATA:
-ok(ref $dat->{_DATA}->[0]->{seq} eq 'ARRAY', "Error in load of anonymous data: Case 1: not an aref");
+ok(ref $dat->{_DATA}->[0]->{seq} eq 'ARRAY', "Error in load() of Case 1 (unreferenced unlabelled array): not an aref");
 $ret_data = $dat->access();
-ok( $cmp_aref->simple_compare(\@data1, $ret_data), 'Error in access after load: Case 1: got '. join('',@$ret_data) );
+ok( $cmp_aref->simple_compare(\@data1, $ret_data), 'Error in access() after Case 1 load(): got '. join('',@$ret_data) );
 eval {$dat->add('a', 'b');};
 ok(!$@, "Error in add: Case 1");
 $ret_data = $dat->access();
-ok( $cmp_aref->simple_compare(\@data1e, $ret_data), 'Error in access after add: Case 1: got '. join('',@$ret_data) );
+ok( $cmp_aref->simple_compare(\@data1e, $ret_data), 'Error in access() after Case 1 add(): got '. join('',@$ret_data) );
 
 # CASE 2
 eval {$dat->load(\@data1);};
 ok(!$@, "Error in load: Case 2");
 $ret_data = $dat->access();
-ok($cmp_aref->simple_compare(\@data1, $ret_data), 'Error in access after load: Case 2: got '. join('',@$ret_data));
+ok($cmp_aref->simple_compare(\@data1, $ret_data), 'Error in access() after Case 2 load(): got '. join('',@$ret_data));
 eval {$dat->add(['a', 'b']);};
 ok(!$@, "Error in add: Case 2");
 $ret_data = $dat->access();
-ok( $cmp_aref->simple_compare(\@data1e, $ret_data), 'Error in access after add: Case 2: got '. join('',@$ret_data) );
-#$dat->unload();
+ok( $cmp_aref->simple_compare(\@data1e, $ret_data), 'Error in access() after Case 2 add(): got '. join('',@$ret_data) );
 
 # CASE 3
 eval {$dat->load(data => \@data1);};
 ok(!$@, "Error in load: Case 3");
 # should be stored as aref labelled 'seq' in the first index of _DATA:
-ok(ref $dat->{_DATA}->[0]->{seq} eq 'ARRAY', "Error in load of labelled data: Case 3: not an aref");
-ok($dat->{_DATA}->[0]->{lab} eq 'data', "Error in load of labelled data: Case 3: not equal to given label");
+ok(ref $dat->{_DATA}->[0]->{seq} eq 'ARRAY', "Error in load() of Case 3 (labelled data as hash of arefs): cached sequence is not an aref");
+ok($dat->{_DATA}->[0]->{lab} eq 'data', "Error in load() of Case 3 (labelled data as hash of arefs): cached sequence is not correctly labelled as 'data'");
 $ret_data = $dat->access(label => 'data');
 ok($cmp_aref->simple_compare(\@data1, $ret_data), 'Error in access after load: Case 3: got '. join('',@$ret_data));
 eval {$dat->add(data => ['a', 'b']);};
@@ -92,6 +91,12 @@ ok(!$@, "Error in add: Case 6");
 $ret_data = $dat->access(label => 'dist1');
 ok( $cmp_aref->simple_compare(\@data1e, $ret_data), 'Error in access after add: Case 6: got '. join('',@$ret_data) );
 
+# disallowed cases: 
+#eval {$dat->load([\@data1, \@data2]);};
+#ok($@, "Failed load $@");
+#eval {$dat->load(dist => 3);};
+#ok($@, "Failed load $@");
+
 # unload() test:
 eval {$dat->unload();};
 ok(!$@, "Error in unload");
@@ -111,17 +116,8 @@ ok( $cmp_aref->simple_compare([3], $ret_data), 'Error in access after unload and
 $ret_data = $dat->access(label => 'dist2');
 ok( $cmp_aref->simple_compare(\@data2, $ret_data), 'Error in access after unload and add: got '. join('',@$ret_data) );
 
-# share()
-my $dat_new = Statistics::Data->new();
-$dat_new->share($dat);
-ok($dat_new->ndata() == 2, "Number of loaded sequences does not equal 2 after share()");
-$ret_data = $dat_new->access(label => 'dist2');
-ok( $cmp_aref->simple_compare(\@data2, $ret_data), 'Error in access after share(): got '. join('',@$ret_data) );
-
-
-# does a new load() clobber all prior loads()? (it shouldn't - unless it's named the same, or anonymous)
-
 sub equal {
+    return 0 if ! defined $_[0] || ! defined $_[1];
     return 1 if $_[0] + EPS > $_[1] and $_[0] - EPS < $_[1];
     return 0;
 }

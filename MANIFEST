@@ -6,7 +6,8 @@ README
 lib/Statistics/Data.pm
 t/00-useok.t
 t/01-load_add_access_unload.t
-t/02-validity_methods.t
+t/02-share.t
+t/03-validity_methods.t
 t/pod-coverage.t
 t/pod.t
 META.yml
