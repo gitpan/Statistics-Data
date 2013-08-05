@@ -5,22 +5,22 @@ use Carp qw(croak);
 use List::AllUtils qw(all);
 use Number::Misc qw(is_even);
 use String::Util qw(hascontent nocontent);
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 NAME
 
-Statistics::Data - Manage loading, accessing, updating one or more sequences of data for statistical analysis
+Statistics::Data - Load, access, update, save one or more sequences of data for statistical analysis
 
 =head1 VERSION
 
-This is documentation for Version 0.06 of Statistics/Data.pm, released August 2013.
+This is documentation for Version 0.07 of Statistics/Data.pm, released August 2013.
 
 =head1 SYNOPSIS
 
- use Statistics::Data 0.06;
+ use Statistics::Data 0.07;
  my $dat = Statistics::Data->new();
  
- # With labelled sequences:
+ # managing labelled sequences:
  $dat->load({'aname' => \@data1, 'anothername' => \@data2}); # labels are arbitrary
  $aref = $dat->access(label => 'aname'); # gets back a copy of @data1
  $dat->add(aname => [2, 3]); # pushes new values onto loaded copy of @data1
@@ -29,17 +29,21 @@ This is documentation for Version 0.06 of Statistics/Data.pm, released August 20
  $aref = $dat->access(label => 'aname'); # $aref is a reference to a copy of @data1
  $dat->dump_vals(label => 'aname', delim => ','); # proof in print it's back 
  
- # With multiple anonymous sequences:
+ # managing multiple anonymous sequences:
  $dat->load(\@data1, \@data2); # any number of anonymous arrays
  $dat->add([2], [6]); # pushes a single value apiece onto copies of @data1 and @data2
  $aref = $dat->access(index => 1); # returns reference to copy of @data2, with its new values
  $dat->unload(index => 0); # only @data2 remains loaded, and its index is now 0
 
- # With a single anonymous data sequence:
+ # managing single anonymous sequence, over time:
  $dat->load(1, 2, 2);
  $dat->add(1); # loaded sequence is now 1, 2, 2, 1
  $dat->dump_vals(); # same as: print @{$dat->access()}, "\n";
- $dat->unload(); # all gone
+ $dat->save_to_path(path => 'hereweare.dat'); # get ready to retire
+ $dat->unload(); # all gone - go wild, knowing that you can ...
+ $dat->load_from_path(path => 'hereweare.dat'); # back again - go to work 
+ $dat->dump_vals(); # proof: same printed output as before
+ # do more work
 
 =head1 DESCRIPTION
 
@@ -49,7 +53,7 @@ Rationale is not wanting to write the same or similar load, add, etc. methods fo
 
 =head1 SUBROUTINES/METHODS
 
-The basics aims/rules/behaviors of the methods have been/are as described in the L<RATIONALE|Statistics::Data/RATIONALE> section, below. The possibilities are many, but, to wrap up: any loaded/added sequence of data ends up cached within the class object's '_DATA' aref as an aref itself. Optionally (but preferably), this sequence is associated with a 'label', i.e., a stringy name, if it's been loaded/added as such. The sequences can be updated or retrieved according to the order in which they were loaded/added (by index) or (preferably) its 'label'. In this way, any particular statistical method (e.g., to calculate the number of runs in the sequence, as in L<Statistics::Sequences::Runs|Statistics::Sequences::Runs>), can refer to the 'index' or 'label' of the sequence to do its analysis upon - or it can still use its own rules to select the appropriate sequence, or provide the appropriate sequence within the call to itself. The particular data structures supported here to load, update, retrieve, unload data are specified under L<load|Statistics::Data/load>.
+Manages caches of one or more lists of data for use by some other statistics modules. The lists are ordered arrays comprised of literal scalars (numbers, strings). They can be loaded, added to (updated), accessed or unloaded by referring to the index (order) in which they have been loaded (or previously added to), or by a particular label. The lists are cached within the class object's '_DATA' aref as an aref itself, optionally associated with a 'label'. The particular structures supported here to load, update, retrieve, unload data are specified under L<load|Statistics::Data/load>. Any module that uses this one as its base can still use its own rules to select the appropriate sequence, or provide the appropriate sequence within the call to itself. The basics aims/rules/behaviors of the methods have been/are as described in the L<RATIONALE|Statistics::Data/RATIONALE> section. 
 
 =head2 new
 
@@ -115,7 +119,9 @@ Load an anonymous array that has no named values. For example:
 
 This is loaded as a single sequence, with an undefined label, and indexed as 0. Note that trying to load a labelled dataset with an unreferenced array is wrong for it will be treated like this case - the label will be "folded" into the sequence itself:
 
- $dat->load('dist' => 3); # no croak but not ok! 
+ $dat->load('dist' => 3); # no croak but not ok!
+
+... XXX If this fails, whatever is sent to load is found not to start with an aref, or to be a hash(ref) of aref(s), or to be a flat list of aref(s), it will be treated like this. 
 
 =item load AREF
 
@@ -208,13 +214,7 @@ Return the data that have been loaded/added to. Only one access of a single sequ
 
 sub access {
     my ($self, @args) = @_;
-    my $i = !$args[0] ? 0 : _index_by_args($self, @args);
-    if (defined $i and ref $self->{_DATA}->[$i]->{seq}) {
-       return $self->{_DATA}->[$i]->{seq};
-    }
-    else {
-       croak __PACKAGE__, '::access Data for accessing need to be loaded';
-    }
+    return $self->{_DATA}->[ _index_by_args($self, @args) ]->{seq};
 }
 *read = \&access; # legacy only
 *get_data = \&access;
@@ -235,15 +235,9 @@ sub unload {
         $self->{_DATA} = [];
     }
     else {
-        my $i = _index_by_args($self, @args);
-        if (defined $i and ref $self->{_DATA}->[$i]) {
-            splice @{$self->{_DATA}}, $i, 1;
-        }
-        else {
-            croak __PACKAGE__, '::unload Data for unloading need to be loaded';
-        }
+        splice @{$self->{_DATA}}, _index_by_args($self, @args), 1;
     }
-    return 1;
+    return;
 }
 
 =head2 share
@@ -357,7 +351,7 @@ sub dump_vals {
     my ($self, @args) = @_;
     my $args = ref $args[0] ? $args[0] : {@args};
     my $delim = $args->{'delim'} || q{ };
-    print join($delim, @{$self->access($args)}), "\n" or croak 'Could not print line to STDOUT';
+    print {*STDOUT} join($delim, @{$self->access($args)}), "\n" or croak 'Could not print line to STDOUT';
     return 1;
 }
 *dump_line = \&dump_vals; # legacy only
@@ -385,7 +379,7 @@ sub dump_list {
     require Text::SimpleTable;
     $tbl = Text::SimpleTable->new([$maxlens[0], 'index'], [$maxlens[1], 'label'], [$maxlens[2], 'N']);
     $tbl->row(@{$_}) foreach @rows;
-    print $tbl->draw or croak 'Could not print list of loaded data';
+    print {*STDOUT} $tbl->draw or croak 'Could not print list of loaded data';
     return 1;
 }
 *list = \&dump_list; # legacy only
@@ -450,7 +444,7 @@ sub _init_data {
     elsif (ref $args[0]) {
         croak 'Don\'t know how to load/add data';
     }
-    else { # case 1
+    else { # assume @args is just a list of nude strings - case 1
         $tmp->{0} = {seq => [@args], lab => undef};
     }
     return $tmp;
@@ -476,7 +470,7 @@ sub _isa_hash_of_arefs {
     if (is_even(scalar @args)) { # Number::Misc method - not odd number in assignment
         my %args = @args; # so assume is hash
         HASHCHECK:
-        while ( my ($lab, $val) = each %args ) { # print "lab = $lab, val = $val\n";
+        while ( my ($lab, $val) = each %args ) {
             if ( hascontent($lab) && ref $val eq 'ARRAY' ) {
                 $ret = 1;
             }
@@ -511,7 +505,6 @@ sub _init_labelled_data {
             $tmp{$j} = {seq => [@{$seq}], lab => undef};
         }
         else {# no aref labelled $lab yet: define for seq and label
-            print "init lab = $lab seq = $seq\n";
             $tmp{$i++} = {seq => [@{$seq}], lab => $lab};
         }
     }
@@ -529,23 +522,29 @@ sub _init_unlabelled_data {
 
 sub _index_by_args {
     my ($self, @args) = @_;
-    my $args = ref $args[0] ? $args[0] : {@args};
     my $i;
-    if (hascontent($args->{'index'})) {
-        $i = $args->{'index'};
-    }
-    elsif (hascontent($args->{'label'})) {
-        $i = _seq_index_by_label($self, $args->{'label'});
-    }
-    else {
+    if (!$args[0]) {
         $i = 0;
     }
-    return $i;
+    else {
+        my $args = ref $args[0] ? $args[0] : {@args};
+        if (hascontent($args->{'index'})) {
+            $i = $args->{'index'};
+        }
+        elsif (hascontent($args->{'label'})) {
+            $i = _seq_index_by_label($self, $args->{'label'});
+        }
+        else {
+            $i = 0;
+        }
+    } #    print "index by args = $i\n";
+    return (defined $i and ref $self->{_DATA}->[$i]->{'seq'}) ? $i : croak __PACKAGE__, ' Data for accessing need to be loaded';
 }
 
 sub _seq_index_by_label {
-    my ($self, $label, $i, $k) = @_;
-    for ($i = 0; $i < scalar(@{$self->{_DATA}}); $i++) {
+    my ($self, $label) = @_;
+    my ($i, $k) = (0, 0);
+    for (; $i < scalar(@{$self->{_DATA}}); $i++) {
         do {$k++; last;} if $self->{_DATA}->[$i]->{lab} and $self->{_DATA}->[$i]->{lab} eq $label;
     }
     return $k ? $i : undef;
@@ -639,7 +638,7 @@ Croaked when calling L<unload|Statistics::Data/unload> with an index or a label 
 
 =item There is no path for saving (or loading) data
 
-Croaked when calling L<save_to_file|Statistics::Data/save_to_file> or L<load_from_file|Statistics::Data/load_from_file> without a value for the required B<path> argument, or if (when loading from it) it does not exist.
+Croaked when calling L<save_to_file|Statistics::Data/save_to_file> or L<load_from_file|Statistics::Data/load_from_file> without a value for the required B<path> argument, or if it does not exist when it's touched for a load.
 
 =back
 
@@ -734,7 +733,7 @@ Roderick Garton, C<< <rgarton at cpan.org> >>
 Copyright 2009-2013 Roderick Garton
 
 This program is free software; you can redistribute it and/or modify it under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License. See L<perl.org/licenses|http://dev.perl.org/licenses/> for more information.
+by the Free Software Foundation; or the Artistic License. See L<perl.org|http://dev.perl.org/licenses/> for more information.
 
 =cut
 

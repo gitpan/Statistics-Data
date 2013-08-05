@@ -1,10 +1,16 @@
 Revision history for perl module Statistics-Data
 
+0.07 2013-08-06
+    - cleanup some code re access()
+    - remove errant print() check statement
+    - attempt solve test issues under cygwin (no hash bangs to perl)
+    - rewrote abstract and synopsis
+
 0.06 2013-08-04
     - extended check for hash of arefs passed to load/add, from simply checking that $args[1] is aref - see _isa_hash_of_arefs() called by _init_data() via add()
     - clarified _init_data() logics by further subroutining
     - extended POD manual to better describe accepted data structures for load() and add(), + other misc. POD revisions
-    - misc. "best practice" code revisions, passing at least all level 4 and 5 Perl::Critic controls
+    - misc. "best practice" code revisions, passing all level >= 4 severities via Perl::Critic
 
 0.05 2013-08-03
     - all_numeric() and all_proportions() now check that all values are defined and have content as per String::Util hascontent()

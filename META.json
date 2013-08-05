@@ -1,10 +1,10 @@
 {
-   "abstract" : "Manage loading, accessing, updating one or more sequences of data for statistical analysis",
+   "abstract" : "Load, access, update, save one or more sequences of data for statistical analysis",
    "author" : [
       "Roderick Garton <rgarton@cpan.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4007, CPAN::Meta::Converter version 2.131560",
+   "generated_by" : "Module::Build version 0.4007, CPAN::Meta::Converter version 2.132140",
    "license" : [
       "perl_5"
    ],
@@ -16,13 +16,13 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "Array::Compare" : "0",
-            "Test::More" : "0"
+            "Array::Compare" : "2.02",
+            "Test::More" : "0.92"
          }
       },
       "configure" : {
          "requires" : {
-            "Module::Build" : "0.4"
+            "Module::Build" : "0.4007"
          }
       },
       "runtime" : {
@@ -30,8 +30,8 @@
             "Data::Serializer" : "0.59",
             "List::AllUtils" : "0.03",
             "Number::Misc" : "1.0",
-            "Scalar::Util" : "1.23",
-            "String::Util" : "0.11",
+            "Scalar::Util" : "1.27",
+            "String::Util" : "0.21",
             "Text::SimpleTable" : "2.03"
          }
       }
@@ -39,7 +39,7 @@
    "provides" : {
       "Statistics::Data" : {
          "file" : "lib/Statistics/Data.pm",
-         "version" : "0.06"
+         "version" : "0.07"
       }
    },
    "release_status" : "stable",
@@ -48,5 +48,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.06"
+   "version" : "0.07"
 }

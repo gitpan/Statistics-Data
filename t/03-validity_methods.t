@@ -1,5 +1,3 @@
-#!perl -T
-
 use Test::More tests => 12;
 use constant EPS => 1e-3;
 use Statistics::Data;
