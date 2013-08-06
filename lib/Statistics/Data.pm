@@ -5,19 +5,19 @@ use Carp qw(croak);
 use List::AllUtils qw(all);
 use Number::Misc qw(is_even);
 use String::Util qw(hascontent nocontent);
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 NAME
 
-Statistics::Data - Load, access, update, save one or more sequences of data for statistical analysis
+Statistics::Data - Load, access, update, check and save one or more sequences of data for statistical analysis
 
 =head1 VERSION
 
-This is documentation for Version 0.07 of Statistics/Data.pm, released August 2013.
+This is documentation for Version 0.08 of Statistics/Data.pm, released August 2013.
 
 =head1 SYNOPSIS
 
- use Statistics::Data 0.07;
+ use Statistics::Data 0.08;
  my $dat = Statistics::Data->new();
  
  # managing labelled sequences:
@@ -53,7 +53,7 @@ Rationale is not wanting to write the same or similar load, add, etc. methods fo
 
 =head1 SUBROUTINES/METHODS
 
-Manages caches of one or more lists of data for use by some other statistics modules. The lists are ordered arrays comprised of literal scalars (numbers, strings). They can be loaded, added to (updated), accessed or unloaded by referring to the index (order) in which they have been loaded (or previously added to), or by a particular label. The lists are cached within the class object's '_DATA' aref as an aref itself, optionally associated with a 'label'. The particular structures supported here to load, update, retrieve, unload data are specified under L<load|Statistics::Data/load>. Any module that uses this one as its base can still use its own rules to select the appropriate sequence, or provide the appropriate sequence within the call to itself. The basics aims/rules/behaviors of the methods have been/are as described in the L<RATIONALE|Statistics::Data/RATIONALE> section. 
+Manages caches of one or more lists of data for use by some other statistics modules. The lists are ordered arrays comprised of literal scalars (numbers, strings). They can be loaded, added to (updated), accessed or unloaded by referring to the index (order) in which they have been loaded (or previously added to), or by a particular label. The lists are cached within the class object's '_DATA' aref as an aref itself, optionally associated with a 'label'. The particular structures supported here to load, update, retrieve, unload data are specified under L<load|Statistics::Data/load>. Any module that uses this one as its base can still use its own rules to select the appropriate sequence, or provide the appropriate sequence within the call to itself. The basic aims/behaviors of the methods are described in the L<RATIONALE|Statistics::Data/RATIONALE> section. 
 
 =head2 new
 
@@ -117,11 +117,7 @@ Load an anonymous array that has no named values. For example:
  $dat->load(1, 4, 7);
  $dat->load(@ari);
 
-This is loaded as a single sequence, with an undefined label, and indexed as 0. Note that trying to load a labelled dataset with an unreferenced array is wrong for it will be treated like this case - the label will be "folded" into the sequence itself:
-
- $dat->load('dist' => 3); # no croak but not ok!
-
-... XXX If this fails, whatever is sent to load is found not to start with an aref, or to be a hash(ref) of aref(s), or to be a flat list of aref(s), it will be treated like this. 
+This is loaded as a single sequence, with an undefined label, and indexed as 0. Note that trying to load a labelled dataset with an unreferenced array is wrong for it will be treated like this case - the label will be "folded" into the sequence itself.
 
 =item load AREF
 
@@ -179,22 +175,22 @@ sub load { # load single aref: cannot load more than one sequence; keeps a direc
 
 I<Alias>: B<add_data>, B<append_data>, B<update>
 
-Same usage as shown above for L<load|Statistics::Data/load>. Just push any value(s) or so along, or loads an entirely labelled sequence, without clobbering what's already in there (as L<load|Statistics::Data/load> would). If data have not been loaded with a label, then appending data to them happens according to the order of array-refs set here, see L<EXAMPLES|EXAMPLES> could even skip adding something to one previously loaded sequence by, e.g., going $dat->add([], \new_data) - adding nothing to the first loaded sequence, and initialising a second array, if none already, or appending these data to it.
+Same usage as above for L<load|Statistics::Data/load>. Just push any value(s) or so along, or loads an entirely labelled sequence, without clobbering what's already in there (as L<load|Statistics::Data/load> would). If data have not been loaded with a label, then appending data to them happens according to the order of array-refs set here, see L<EXAMPLES|EXAMPLES> could even skip adding something to one previously loaded sequence by, e.g., going $dat->add([], \new_data) - adding nothing to the first loaded sequence, and initialising a second array, if none already, or appending these data to it.
 
 =cut
 
 sub add {
     my ($self, @args) = @_;
     my $tmp = _init_data($self, @args); # hashref of data sequence(s) keyed by index to use for loading or adding
-    while (my($key, $val) = each %{$tmp}) {
+    while (my($i, $val) = each %{$tmp}) {
         if (defined $val->{'lab'}) { # newly labelled data
-            $self->{_DATA}->[$key] = {seq => $val->{'seq'}, lab => $val->{'lab'}};
+            $self->{_DATA}->[$i] = {seq => $val->{'seq'}, lab => $val->{'lab'}};
         }
         else { # data to be added to existing cache, or an anonymous load, indexed only
-            push @{$self->{_DATA}->[$key]->{seq}}, @{$val->{'seq'}};
+            push @{$self->{_DATA}->[$i]->{'seq'}}, @{$val->{'seq'}};
         }
     }
-    return 1;
+    return;
 }
 *add_data = \&add;
 *append_data = \&add;
@@ -214,7 +210,7 @@ Return the data that have been loaded/added to. Only one access of a single sequ
 
 sub access {
     my ($self, @args) = @_;
-    return $self->{_DATA}->[ _index_by_args($self, @args) ]->{seq};
+    return $self->{_DATA}->[ _index_by_args($self, @args) ]->{'seq'};
 }
 *read = \&access; # legacy only
 *get_data = \&access;
@@ -283,31 +279,52 @@ Checks not only if the data sequence, as named or indexed, exists, but if it is 
 sub all_full {
     my ($self, @args) = @_;
     my $data = ref $args[0] ? shift @args: $self->access(@args);
+    my ($bool, @vals) = ();
     foreach (@{$data}) {
-        return 0 if nocontent($_);
+        $bool = nocontent($_) ? 0 : 1;
+        if (wantarray) {
+            push @vals, $_ if $bool;
+        }
+        else {
+            last if $bool == 0;
+        }
     }
-    return 1;
+    return wantarray ? (\@vals, $bool) : $bool;
 }
 
 =head2 all_numeric
 
- $bool = $dat->all_numeric(\@data); # test data are valid before loading them
- $bool = $dat->all_numeric(label => 'mydata'); # checking after loading/adding the data (or key in 'index')
+ $bool = $dat->all_numeric(); # test data first-loaded, if any
+ $bool = $dat->all_numeric(\@data); # test these data are valid before loading them
+ $bool = $dat->all_numeric(label => 'mydata'); # check specific data after loading/adding them by a 'label' or by their 'index' order
+ ($aref, $bool) = $dat->all_numeric([3, '', 4.7, undef, 'b']); # returns ([3, 4.7], 0); - same for any loaded data
 
-Ensure data are all numerical, using C<looks_like_number> in L<Scalar::Util|Scalar::Util/looks_like_number>.
+Give an aref of data, or refer to data previously loaded, for testing their numeracy; see L<access|Statistics::Data/access> for conventions to refer to loaded data. Returns a boolean scalar indicating if all data in this series (aref) are defined and not empty (using C<nocontent> in L<String::Util::String::Util/nocontent>), and, if they have content, if these are all numerical, using C<looks_like_number> in L<Scalar::Util|Scalar::Util/looks_like_number>. If called in array context, returns the data (as an aref) less any values that failed this test, followed by the boolean. This method is also called whenever L<load|Statistics::Data/load>ing or L<add|Statistics::Data/add>ing any data, ahead of caching appropriate descriptives for them; see L<Statistics|Statistics::Data/Statistics>.
 
 =cut
 
 sub all_numeric {
     my ($self, @args) = @_;
-    my $data = ref $args[0] ? shift @args: $self->access(@args);
-    require Scalar::Util;
-    my $ret = 0;
-    foreach (@{$data}) {
-        $ret =  (nocontent($_) or not Scalar::Util::looks_like_number($_)) ? 0 : 1;
-        last if $ret == 0;
+    my ($data, $bool) = ();
+    if (ref $args[0] eq 'ARRAY') {
+        $data = shift @args;
     }
-    return $ret;
+    else {
+        $data = $self->{_DATA}->[_index_by_args($self, @args)]->{'seq'};
+    }
+    require Scalar::Util;
+    my (@vals) = ();
+    foreach (@{$data}) {
+        $bool = (nocontent($_) or not Scalar::Util::looks_like_number($_)) ? 0 : 1;
+        if (wantarray) {
+           push @vals, $_ if $bool;
+        }
+        else {
+            last if $bool == 0;
+        }
+        $data = \@vals;
+    }
+    return wantarray ? ($data, $bool) : $bool;
 }
 *all_numerical = \&all_numeric;
 
@@ -324,17 +341,22 @@ sub all_proportions {
     my ($self, @args) = @_;
     my $data = ref $args[0] ? shift @args: $self->access(@args);
     require Scalar::Util;
-    my $ret = 0;
+    my ($bool, @vals) = ();
     foreach (@{$data}) {
         if (nocontent($_)) {
-            $ret = 0;
+            $bool = 0;
         }
         elsif (Scalar::Util::looks_like_number($_)) {
-            $ret = ( $_ < 0 || $_ > 1 ) ? 0 : 1;
+            $bool = ( $_ < 0 || $_ > 1 ) ? 0 : 1;
         }
-        last if $ret == 0;
+        if (wantarray) {
+            push @vals, $_ if $bool;
+        }
+        else {
+            last if $bool == 0;
+        }
     }
-    return $ret;
+    return wantarray ? (\@vals, $bool) : $bool;
 }
 
 =head2 dump_vals
@@ -427,7 +449,7 @@ sub load_from_file {
 }
 *open = \&load_from_file; # legacy only
 
-# PRIVATMETHODEN:
+# PRIVATE METHODS:
 
 sub _init_data {
     my ($self, @args) = @_;
@@ -466,24 +488,24 @@ sub _isa_hash_of_arefs {
     # - every odd indexed value 'hascontent' via String::Util
     # - every even indexed value is aref
     my @args = @_;
-    my $ret = 0;
+    my $bool = 0;
     if (is_even(scalar @args)) { # Number::Misc method - not odd number in assignment
         my %args = @args; # so assume is hash
         HASHCHECK:
         while ( my ($lab, $val) = each %args ) {
             if ( hascontent($lab) && ref $val eq 'ARRAY' ) {
-                $ret = 1;
+                $bool = 1;
             }
             else {
-                $ret = 0;
+                $bool = 0;
             }
-            last HASHCHECK if $ret == 0;
+            last HASHCHECK if $bool == 0;
         }
     }
     else {
-        $ret = 0;
+        $bool = 0;
     }
-    return $ret;
+    return $bool;
 }
 
 sub _isa_array_of_arefs {
@@ -694,6 +716,8 @@ The modules that use this one simply make themselves "based" on it, and they're 
 
 =head1 BUGS AND LIMITATIONS
 
+Some methods rely on accessing previously loaded data but should permit performing their operations on data submitted directly to them, just like, e.g., $dat->all_numeric(\@data) is ok. This is handled for now internally, but should be handled in the same way by modules using this one as its base - for at the moment they have to check for an aref to their data-manipulating methods ahead of accessing any loaded data by this module.
+
 Please report any bugs or feature requests to C<bug-statistics-data-0.01 at rt.cpan.org>, or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Statistics-Data-0.01>. This will notify the author, and then you'll automatically be notified of progress on your bug as any changes are made.
 
 =head1 SUPPORT
@@ -708,19 +732,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.06>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-Data-0.08>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Statistics-Data-0.06>
+L<http://annocpan.org/dist/Statistics-Data-0.08>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Statistics-Data-0.06>
+L<http://cpanratings.perl.org/d/Statistics-Data-0.08>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Statistics-Data-0.06/>
+L<http://search.cpan.org/dist/Statistics-Data-0.08/>
 
 =back
 

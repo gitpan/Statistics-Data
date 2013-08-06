@@ -1,4 +1,5 @@
-use Test::More tests => 12;
+use strict;
+use Test::More tests => 17;
 use constant EPS => 1e-3;
 use Statistics::Data;
 use Array::Compare;
@@ -32,6 +33,14 @@ $dat->load(dist1 => [@data1[0 .. 7]]);
 $ret = $dat->all_numeric(label => 'dist1');
 ok($ret == 1, "Error in testing all_numeric(): Should be 1, is $ret");
 
+$dat->add(dist1 => ['', 1]);
+$ret = $dat->all_numeric(label => 'dist1');
+ok($ret == 0, "Error in testing all_numeric(): Should be 0, is $ret");
+
+$dat->add(dist1 => [undef, 1]);
+$ret = $dat->all_numeric(label => 'dist1');
+ok($ret == 0, "Error in testing all_numeric(): Should be 0, is $ret");
+
 $dat->add(dist1 => ['x', 1]);
 $ret = $dat->all_numeric(label => 'dist1');
 ok($ret == 0, "Error in testing all_numeric(): Should be 0, is $ret");
@@ -53,6 +62,20 @@ ok($ret == 0, "Error in testing all_proportions(): Should be 0, is $ret");
 $dat->load(dist => [.3, .25, .8]);
 $ret = $dat->all_proportions(label => 'dist');
 ok($ret == 1, "Error in testing all_proportions(): Should be 1, is $ret");
+
+# check return of "valid" values:
+
+my $vals;
+
+($vals, $ret) = $dat->all_full([3, '', 0.7, undef, 'b']);
+ok( $cmp_aref->simple_compare([3, 0.7, 'b'], $vals), 'Error in testing all_full(): got '. join('',@{$vals}) );
+
+($vals, $ret) = $dat->all_numeric([3, '', 0.7, undef, 'b']);
+ok( $cmp_aref->simple_compare([3, 0.7], $vals), 'Error in testing all_numeric(): got '. join('',@{$vals}) );
+
+($vals, $ret) = $dat->all_proportions([3, '', 0.7, undef, 'b']);
+ok( $cmp_aref->simple_compare([0.7], $vals), 'Error in testing all_proportions(): got '. join('',@{$vals}) );
+
 
 sub equal {
     return 0 if ! defined $_[0] || ! defined $_[1];

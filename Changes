@@ -1,5 +1,10 @@
 Revision history for perl module Statistics-Data
 
+0.08 2013-08-07
+    - validity methods expanded: all_full(), all_numeric() and all_proportions() can now be called in list context to return not just a scalar boolean, but the data that they would accept (as "full", numeric and proportions), as an aref, followed by the boolean.
+    - removed '__PACKAGE__' prefix to all (not just some) croaks
+    - misc. POD manual revisions
+
 0.07 2013-08-06
     - cleanup some code re access()
     - remove errant print() check statement

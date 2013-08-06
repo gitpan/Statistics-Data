@@ -7,7 +7,7 @@ my $builder = Module::Build->new(
     license             => 'perl',
     dist_author         => q{Roderick Garton <rgarton@cpan.org>},
     dist_version_from   => 'lib/Statistics/Data.pm',
-    dist_abstract       => 'Load, access, update, save one or more sequences of data for statistical analysis',
+    dist_abstract       => 'Load, access, update, check and save one or more sequences of data for statistical analysis',
     configure_requires => {
         'Module::Build' => '0.4007',
     },
@@ -23,7 +23,7 @@ my $builder = Module::Build->new(
         'String::Util' => '0.21',
         'Text::SimpleTable' => '2.03',
     },
-    add_to_cleanup      => [ 'Statistics-Data-0.07-*' ],
+    add_to_cleanup      => [ 'Statistics-Data-0.08-*' ],
     create_makefile_pl => 'traditional',
 );
 
